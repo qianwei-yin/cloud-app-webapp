@@ -59,3 +59,13 @@
    sudo systemctl restart postgresql
    sudo systemctl status postgresql
    ```
+
+add
+
+```
+      - name: Try to fail
+        run: exit 1
+
+      - name: Print message if it doesn't fail
+        run: echo Should not see this message
+```
