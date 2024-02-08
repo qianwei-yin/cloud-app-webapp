@@ -6,7 +6,7 @@ name: CI
 on:
   # Triggers the workflow on pull request events but only for the "main" branch
   push:
-    branches: ['dev/github-actions']
+    branches: ['dev/github-actions', 'asgmt/**']
   pull_request:
     branches: ['main']
 
