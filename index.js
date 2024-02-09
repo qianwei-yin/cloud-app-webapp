@@ -3,6 +3,7 @@ const bodyParser = require('body-parser');
 require('dotenv').config();
 
 const bcrypt = require('bcrypt');
+const validator = require('validator');
 
 const app = express();
 app.use(bodyParser.urlencoded({ extended: true }));
@@ -55,6 +56,10 @@ const User = sequelize.define(
 
 app.post('/v1/user', async (req, res) => {
 	const userInfo = req.body;
+
+	if (!validator.isEmail(userInfo.username)) {
+		return res.status(400).send();
+	}
 
 	try {
 		const hash = await hashPassword(userInfo.password);
@@ -143,6 +148,10 @@ app.put('/v1/user/self', async (req, res) => {
 		console.error('Error:', error);
 		res.status(400).send();
 	}
+});
+
+app.head('/healthz', (req, res) => {
+	res.status(405).send();
 });
 
 app.get('/healthz', async (req, res) => {
