@@ -50,9 +50,11 @@ const User = sequelize.define(
 	}
 );
 
-(async () => {
-	await User.sync({ force: true }); // creates the table in database, but drop it first if it already exists
-})();
+if (!process.argv.includes('--keep')) {
+	(async () => {
+		await User.sync({ force: true }); // creates the table in database, but drop it first if it already exists
+	})();
+}
 
 app.post('/v1/user', async (req, res) => {
 	const userInfo = req.body;
@@ -82,7 +84,7 @@ app.get('/v1/user/self', async (req, res) => {
 	console.log(encoded);
 
 	if (!encoded) {
-		return res.status(403).send();
+		return res.status(401).send();
 	}
 
 	try {
@@ -92,7 +94,7 @@ app.get('/v1/user/self', async (req, res) => {
 
 		const userInfoInDb = await User.findOne({ where: { username: email } });
 		if (!userInfoInDb || !userInfoInDb?.dataValues?.password) {
-			return res.status(403).send();
+			return res.status(401).send();
 		}
 
 		bcrypt.compare(password, userInfoInDb.dataValues.password, function (err, result) {
@@ -100,7 +102,7 @@ app.get('/v1/user/self', async (req, res) => {
 				const { password, ...userInfo } = userInfoInDb.dataValues;
 				res.status(200).json(userInfo);
 			} else {
-				return res.status(403).send();
+				return res.status(401).send();
 			}
 		});
 	} catch (error) {
@@ -114,7 +116,7 @@ app.put('/v1/user/self', async (req, res) => {
 	console.log(encoded);
 
 	if (!encoded) {
-		return res.status(403).send();
+		return res.status(401).send();
 	}
 
 	const updateInfo = req.body;
@@ -126,7 +128,7 @@ app.put('/v1/user/self', async (req, res) => {
 
 		const userInfoInDb = await User.findOne({ where: { username: email } });
 		if (!userInfoInDb || !userInfoInDb?.dataValues?.password) {
-			return res.status(403).send();
+			return res.status(401).send();
 		}
 
 		bcrypt.compare(password, userInfoInDb.dataValues.password, async function (err, result) {
@@ -141,7 +143,7 @@ app.put('/v1/user/self', async (req, res) => {
 				await userInfoInDb.update(updateInfo);
 				res.status(204).send();
 			} else {
-				return res.status(403).send();
+				return res.status(401).send();
 			}
 		});
 	} catch (error) {
@@ -183,6 +185,8 @@ async function hashPassword(plainTextPassword) {
 	return bcrypt.hash(plainTextPassword, saltRounds);
 }
 
-app.listen(3000, (err) => {
+const server = app.listen(3000, (err) => {
 	console.log('Listening...');
 });
+
+module.exports = { app, sequelize, server };
