@@ -1,0 +1,19 @@
+[Unit]
+Description=CSYE 6225 App
+ConditionPathExists=/home/packer/myapp/index.js
+After=network.target
+
+[Service]
+Type=simple
+User=packer
+Group=packer
+WorkingDirectory=/home/packer/myapp
+ExecStart=/usr/bin/node /home/packer/myapp/index.js
+Restart=on-failure
+RestartSec=3
+StandardOutput=syslog
+StandardError=syslog
+SyslogIdentifier=packer
+
+[Install]
+WantedBy=multi-user.target
