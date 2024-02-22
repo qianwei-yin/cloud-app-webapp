@@ -1,0 +1,11 @@
+{
+	"project_id": "learn-terraform-gcp-414401",
+	"zone": "us-west1-b",
+	"source_image_family": "centos-stream-8",
+	"custom_image_disk_size": 20,
+	"custom_image_disk_type": "pd-standard",
+	"custom_image_description": "csye 6225 app custom image",
+	"custom_image_family": "csye6225-qy",
+	"custom_image_storage_locations": ["us"],
+	"custom_image_ssh_username": "packer"
+}

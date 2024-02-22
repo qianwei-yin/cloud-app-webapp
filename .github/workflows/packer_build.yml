@@ -38,4 +38,4 @@ jobs:
         run: 'packer init ./packer'
 
       - name: Build Artifact
-        run: packer build -var "project_id=learn-terraform-gcp-414401" -var "zone=us-west1-b" -var "source_image_family=centos-stream-8" -var "custom_image_disk_size=20" -var "custom_image_disk_type=pd-standard" -var "custom_image_description=csye 6225 app custom image" -var "custom_image_family=csye6225-qy" -var "custom_image_storage_locations=["us"]" -var "custom_image_ssh_username=packer" ./packer
+        run: cd packer && packer build -var-file=variables.dev.json .
