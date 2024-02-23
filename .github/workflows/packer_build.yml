@@ -2,9 +2,7 @@ name: Run Packer Build
 
 on:
   pull_request:
-    branches: ['main']
-  # pull_request:
-  #   types: [closed]
+    types: [closed]
 
 env:
   PRODUCT_VERSION: '1.10.1'
@@ -12,7 +10,7 @@ env:
 jobs:
   packer-build:
     runs-on: ubuntu-latest
-    # if: ${{ github.event.pull_request.merged == true && github.event.pull_request.base.ref == 'main' }}
+    if: ${{ github.event.pull_request.merged == true && github.event.pull_request.base.ref == 'main' }}
 
     steps:
       - name: Check out repository code

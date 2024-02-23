@@ -2,17 +2,15 @@ name: Integration Test using Jest, supertest and postgres
 
 # Controls when the workflow will run
 on:
-  # Triggers the workflow on pull request events but only for the "main" branch
-  push:
-    branches: ['dev/github-actions', 'asgmt/**']
   pull_request:
-    branches: ['main']
+    types: [closed]
 
 jobs:
   # Label of the container job
   integration-tests:
     # Containers must run in Linux based operating systems
     runs-on: ubuntu-latest
+    if: ${{ github.event.pull_request.merged == true && github.event.pull_request.base.ref == 'main' }}
 
     services:
       postgres:

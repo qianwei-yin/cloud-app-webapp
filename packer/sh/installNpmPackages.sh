@@ -2,7 +2,7 @@
 
 set -e
 
-cd /home/packer/myapp
+cd /home/csye6225/myapp
 
 npm install
 

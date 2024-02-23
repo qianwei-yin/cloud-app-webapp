@@ -4,8 +4,7 @@ set -e
 
 sudo adduser csye6225 --shell /usr/sbin/nologin
 
-ls -alF ~
+sudo chmod -R g+rwx /home/csye6225
+sudo chmod -R o+rwx /home/csye6225
 
-cat /etc/passwd
-
-who
+ls -alF /home

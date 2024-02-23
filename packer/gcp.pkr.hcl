@@ -23,16 +23,8 @@ source "googlecompute" "custom_image" {
 build {
   sources = ["sources.googlecompute.custom_image"]
 
-  # provisioner "shell" {
-  #   script = "createNoLoginUser.sh"
-  # }
-
   provisioner "shell" {
-    script = "./sh/appDirSetup.sh"
-  }
-
-  provisioner "shell" {
-    script = "./sh/serviceDirSetup.sh"
+    script = "./sh/createNoLoginUser.sh"
   }
 
   provisioner "shell" {
@@ -43,32 +35,45 @@ build {
     script = "./sh/installPostgres.sh"
   }
 
+  provisioner "shell" {
+    script = "./sh/appDirSetup.sh"
+  }
+
+  provisioner "shell" {
+    script = "./sh/serviceDirSetup.sh"
+  }
+
   provisioner "file" {
     sources     = ["../index.js", "../package.json", "../package-lock.json"]
-    destination = "/home/packer/myapp/"
+    destination = "/home/csye6225/myapp/"
   }
 
   provisioner "file" {
     content     = "POSTGRES_USERNAME=conway\nPOSTGRES_DATABASE=conway\nPOSTGRES_PASSWORD=123456"
-    destination = "/home/packer/myapp/.env"
+    destination = "/home/csye6225/myapp/.env"
   }
 
   provisioner "shell" {
     script = "./sh/installNpmPackages.sh"
   }
 
-  # provisioner "shell" {
-  #   inline = [
-  #     "ls -alF /home/packer/myapp"
-  #   ]
-  # }
+  provisioner "shell" {
+    script = "./sh/changeOwner.sh"
+  }
+
+  provisioner "shell" {
+    inline = [
+      "ls -alF /home/csye6225/myapp"
+    ]
+  }
 
   provisioner "file" {
     source      = "./systemd-services/webapp.service"
-    destination = "/lib/systemd/system/webapp.service"
+    destination = "/etc/systemd/system/webapp.service"
   }
 
   provisioner "shell" {
     script = "./sh/startService.sh"
   }
+
 }
