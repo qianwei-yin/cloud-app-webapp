@@ -1,5 +1,5 @@
 {
-	"project_id": "learn-terraform-gcp-414401",
+	"project_id": "csye6225-assignments",
 	"zone": "us-west1-b",
 	"source_image_family": "centos-stream-8",
 	"custom_image_disk_size": 20,
