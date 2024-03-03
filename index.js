@@ -17,7 +17,7 @@ app.use(function (req, res, next) {
 // https://dba.stackexchange.com/questions/83164/postgresql-remove-password-requirement-for-user-postgres
 const { Sequelize, DataTypes } = require('sequelize');
 const sequelize = new Sequelize(process.env.POSTGRES_DATABASE, process.env.POSTGRES_USERNAME, process.env.POSTGRES_PASSWORD, {
-	host: 'localhost',
+	host: process.env.POSTGRES_HOST,
 	dialect: 'postgres',
 });
 

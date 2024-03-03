@@ -8,6 +8,7 @@ packer {
 }
 
 source "googlecompute" "custom_image" {
+  # source_image            = "${var.custom_image_family}-node-installed"
   project_id              = var.project_id
   source_image_family     = var.source_image_family
   zone                    = var.zone
@@ -18,22 +19,24 @@ source "googlecompute" "custom_image" {
   image_description       = var.custom_image_description
   image_storage_locations = var.custom_image_storage_locations
   ssh_username            = var.custom_image_ssh_username
+  # image_name              = "${var.custom_image_family}-node-installed"
 }
 
 build {
   sources = ["sources.googlecompute.custom_image"]
 
   provisioner "shell" {
-    script = "./sh/createNoLoginUser.sh"
-  }
-
-  provisioner "shell" {
     script = "./sh/installNode.sh"
   }
 
+
   provisioner "shell" {
-    script = "./sh/installPostgres.sh"
+    script = "./sh/createNoLoginUser.sh"
   }
+
+  # provisioner "shell" {
+  #   script = "./sh/installPostgres.sh"
+  # }
 
   provisioner "shell" {
     script = "./sh/appDirSetup.sh"
@@ -45,13 +48,22 @@ build {
 
   provisioner "file" {
     sources     = ["../index.js", "../package.json", "../package-lock.json"]
-    destination = "/home/csye6225/myapp/"
+    destination = "/tmp/"
   }
 
-  provisioner "file" {
-    content     = "POSTGRES_USERNAME=conway\nPOSTGRES_DATABASE=conway\nPOSTGRES_PASSWORD=123456"
-    destination = "/home/csye6225/myapp/.env"
+  provisioner "shell" {
+    inline = [
+      "sudo mv /tmp/index.js /home/csye6225/myapp",
+      "sudo mv /tmp/package.json /home/csye6225/myapp",
+      "sudo mv /tmp/package-lock.json /home/csye6225/myapp",
+      "sudo ls -alF /home/csye6225/myapp"
+    ]
   }
+
+  # provisioner "file" {
+  #   content     = "POSTGRES_USERNAME=dbuser\nPOSTGRES_DATABASE=webapp\nPOSTGRES_PASSWORD=123456"
+  #   destination = "/home/csye6225/myapp/.env"
+  # }
 
   provisioner "shell" {
     script = "./sh/installNpmPackages.sh"
@@ -59,12 +71,6 @@ build {
 
   provisioner "shell" {
     script = "./sh/changeOwner.sh"
-  }
-
-  provisioner "shell" {
-    inline = [
-      "ls -alF /home/csye6225/myapp"
-    ]
   }
 
   provisioner "file" {
@@ -75,5 +81,4 @@ build {
   provisioner "shell" {
     script = "./sh/startService.sh"
   }
-
 }

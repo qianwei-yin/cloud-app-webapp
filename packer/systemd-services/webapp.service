@@ -1,6 +1,6 @@
 [Unit]
 Description=CSYE 6225 App
-ConditionPathExists=/home/csye6225/myapp/index.js
+ConditionPathExists=/home/csye6225/myapp/.env
 After=network.target
 
 [Service]
