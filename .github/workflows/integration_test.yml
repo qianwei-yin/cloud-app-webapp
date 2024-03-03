@@ -3,14 +3,14 @@ name: Integration Test using Jest, supertest and postgres
 # Controls when the workflow will run
 on:
   pull_request:
-    types: [opened, synchronize]
+    types: [opened, synchronize, closed]
 
 jobs:
   # Label of the container job
   integration-tests-on-pr-opened:
     # Containers must run in Linux based operating systems
     runs-on: ubuntu-latest
-    # if: ${{ github.event.pull_request == true || github.event.pull_request.merged == true }}
+    if: ${{ github.event.pull_request.merged != true  }}
 
     services:
       postgres:
@@ -55,7 +55,7 @@ jobs:
   integration-tests-on-pr-merged:
     # Containers must run in Linux based operating systems
     runs-on: ubuntu-latest
-    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    if: ${{ github.event.pull_request.merged == true && github.event.pull_request.base.ref == 'main' }}
 
     services:
       postgres:
