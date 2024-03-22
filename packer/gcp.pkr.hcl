@@ -29,7 +29,6 @@ build {
     script = "./sh/installNode.sh"
   }
 
-
   provisioner "shell" {
     script = "./sh/createNoLoginUser.sh"
   }
@@ -37,6 +36,10 @@ build {
   # provisioner "shell" {
   #   script = "./sh/installPostgres.sh"
   # }
+
+  provisioner "shell" {
+    script = "./sh/installOpsAgent.sh"
+  }
 
   provisioner "shell" {
     script = "./sh/appDirSetup.sh"
@@ -51,12 +54,27 @@ build {
     destination = "/tmp/"
   }
 
+  provisioner "file" {
+    source      = "./systemd-services/config.yaml"
+    destination = "/tmp/config.yaml"
+  }
+
   provisioner "shell" {
     inline = [
       "sudo mv /tmp/index.js /home/csye6225/myapp",
       "sudo mv /tmp/package.json /home/csye6225/myapp",
       "sudo mv /tmp/package-lock.json /home/csye6225/myapp",
+      "sudo mv /tmp/config.yaml /etc/google-cloud-ops-agent/config.yaml",
       "sudo ls -alF /home/csye6225/myapp"
+    ]
+  }
+
+  provisioner "shell" {
+    inline = [
+      "sudo touch /tmp/webapp.log",
+      "sudo chown \"csye6225\":\"csye6225\" \"/tmp/webapp.log\"",
+      "sudo chmod 755 /tmp/webapp.log",
+      "sudo systemctl restart google-cloud-ops-agent"
     ]
   }
 

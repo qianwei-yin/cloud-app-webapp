@@ -2,6 +2,20 @@ const express = require('express');
 const bodyParser = require('body-parser');
 require('dotenv').config();
 
+const { createLogger, format, transports } = require('winston');
+const logger = createLogger({
+	level: 'info',
+	format: format.combine(format.timestamp(), format.simple(), format.json()),
+	// format: format.timestamp(),
+	// defaultMeta: { service: 'webapp' },
+	transports: [new transports.Console(), new transports.File({ filename: '/tmp/webapp.log', level: 'debug' })],
+});
+
+logger.error('error distributed logs');
+logger.info('info distributed logs');
+logger.debug('debug distributed logs');
+logger.warn('warn distributed logs');
+
 const bcrypt = require('bcrypt');
 const validator = require('validator');
 
@@ -54,6 +68,10 @@ if (!process.argv.includes('--keep')) {
 	(async () => {
 		await User.sync({ force: true }); // creates the table in database, but drop it first if it already exists
 	})();
+} else if (process.argv.includes('--keep')) {
+	(async () => {
+		await User.sync(); // This creates the table if it doesn't exist (and does nothing if it already exists)
+	})();
 }
 
 app.post('/v1/user', async (req, res) => {
@@ -74,14 +92,13 @@ app.post('/v1/user', async (req, res) => {
 
 		res.status(201).json(newUserInfo);
 	} catch (error) {
-		console.error(error);
+		logger.error({ error: error });
 		res.status(400).send();
 	}
 });
 
 app.get('/v1/user/self', async (req, res) => {
 	const encoded = req.headers.authorization;
-	console.log(encoded);
 
 	if (!encoded) {
 		return res.status(401).send();
@@ -106,14 +123,13 @@ app.get('/v1/user/self', async (req, res) => {
 			}
 		});
 	} catch (error) {
-		console.error('Error:', error);
+		logger.error({ error: error });
 		res.status(400).send();
 	}
 });
 
 app.put('/v1/user/self', async (req, res) => {
 	const encoded = req.headers.authorization;
-	console.log(encoded);
 
 	if (!encoded) {
 		return res.status(401).send();
@@ -147,7 +163,7 @@ app.put('/v1/user/self', async (req, res) => {
 			}
 		});
 	} catch (error) {
-		console.error('Error:', error);
+		logger.error({ error: error });
 		res.status(400).send();
 	}
 });
@@ -162,10 +178,10 @@ app.get('/healthz', async (req, res) => {
 	} else {
 		try {
 			await sequelize.authenticate();
-			console.log('Connection has been established successfully.');
+			logger.info('Connection has been established successfully.');
 			res.status(200).send();
 		} catch (error) {
-			console.error('Unable to connect to the database.', error);
+			logger.error({ message: 'Unable to connect to the database.', error: error });
 			res.status(503).send();
 		}
 	}
@@ -186,7 +202,7 @@ async function hashPassword(plainTextPassword) {
 }
 
 const server = app.listen(3000, (err) => {
-	console.log('Listening...');
+	logger.info('Listening on port 3000...');
 });
 
 module.exports = { app, sequelize, server };
