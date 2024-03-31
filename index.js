@@ -18,10 +18,10 @@ const logger = createLogger({
 	transports: [new transports.Console(), new transports.File({ filename: '/tmp/webapp.log', level: 'debug' })],
 });
 
-logger.error('error distributed logs');
-logger.info('info distributed logs');
-logger.debug('debug distributed logs');
-logger.warn('warn distributed logs');
+// logger.error('error distributed logs');
+// logger.info('info distributed logs');
+// logger.debug('debug distributed logs');
+// logger.warn('warn distributed logs');
 
 const bcrypt = require('bcrypt');
 const validator = require('validator');
@@ -127,6 +127,7 @@ app.post('/v1/user', async (req, res) => {
 	const userInfo = req.body;
 
 	if (!validator.isEmail(userInfo.username)) {
+		logger.warn({ message: `${userInfo.username} is not a valid email.` });
 		return res.status(400).send();
 	}
 
@@ -150,6 +151,7 @@ app.post('/v1/user', async (req, res) => {
 			return res.status(503).send();
 		}
 
+		logger.info({ message: `User ${userInfo.username} created.` });
 		return res.status(201).json(newUserInfo);
 	} catch (error) {
 		logger.error({ error: error });
@@ -161,6 +163,7 @@ app.get('/v1/user/self', async (req, res) => {
 	const encoded = req.headers.authorization;
 
 	if (!encoded) {
+		logger.warn({ message: `No auth info provided.` });
 		return res.status(401).send();
 	}
 
@@ -171,11 +174,13 @@ app.get('/v1/user/self', async (req, res) => {
 
 		const userInfoInDb = await User.findOne({ where: { username: email } });
 		if (!userInfoInDb || !userInfoInDb?.dataValues?.password) {
+			logger.error({ message: `Auth info incorrect.` });
 			return res.status(401).send();
 		}
 
 		const userVerifyInfoInDb = await Verify.findOne({ where: { username: email } });
 		if (!userVerifyInfoInDb?.dataValues?.verified) {
+			logger.error({ message: `User has not been verified.` });
 			return res.status(403).send();
 		}
 
@@ -184,6 +189,7 @@ app.get('/v1/user/self', async (req, res) => {
 				const { password, ...userInfo } = userInfoInDb.dataValues;
 				res.status(200).json(userInfo);
 			} else {
+				logger.error({ message: `Auth info incorrect.` });
 				return res.status(401).send();
 			}
 		});
@@ -197,6 +203,7 @@ app.put('/v1/user/self', async (req, res) => {
 	const encoded = req.headers.authorization;
 
 	if (!encoded) {
+		logger.warn({ message: `No auth info provided.` });
 		return res.status(401).send();
 	}
 
@@ -209,17 +216,20 @@ app.put('/v1/user/self', async (req, res) => {
 
 		const userInfoInDb = await User.findOne({ where: { username: email } });
 		if (!userInfoInDb || !userInfoInDb?.dataValues?.password) {
+			logger.error({ message: `Auth info incorrect.` });
 			return res.status(401).send();
 		}
 
 		const userVerifyInfoInDb = await Verify.findOne({ where: { username: email } });
 		if (!userVerifyInfoInDb?.dataValues?.verified) {
+			logger.error({ message: `User has not been verified.` });
 			return res.status(403).send();
 		}
 
 		bcrypt.compare(password, userInfoInDb.dataValues.password, async function (err, result) {
 			if (result) {
 				if (hasOtherProperty(updateInfo, ['first_name', 'last_name', 'password'])) {
+					logger.warn({ message: `Cannot modify properties other than name and password.` });
 					return res.status(400).send();
 				}
 
@@ -227,8 +237,10 @@ app.put('/v1/user/self', async (req, res) => {
 					updateInfo.password = await hashPassword(updateInfo.password);
 				}
 				await userInfoInDb.update(updateInfo);
+				logger.info({ message: `Updated info successfully.` });
 				res.status(204).send();
 			} else {
+				logger.error({ message: `Auth info incorrect.` });
 				return res.status(401).send();
 			}
 		});
@@ -239,11 +251,13 @@ app.put('/v1/user/self', async (req, res) => {
 });
 
 app.head('/healthz', (req, res) => {
+	logger.error({ message: `HTTP method not allowed.` });
 	res.status(405).send();
 });
 
 app.get('/healthz', async (req, res) => {
 	if (Object.keys(req.body).length !== 0) {
+		logger.warn({ message: `Not allowed to have request body.` });
 		res.status(400).send();
 	} else {
 		try {
@@ -260,18 +274,24 @@ app.get('/healthz', async (req, res) => {
 app.get('/v1/user/verify', async (req, res) => {
 	try {
 		const currentTime = moment();
-		console.log('now: ', currentTime);
 		const { token } = req.query;
 		if (!token) {
+			logger.warn({ message: `No token provided.` });
 			return res.status(400).send();
 		}
 
 		const verifyInfoInDb = await Verify.findOne({ where: { verify_token: token } });
 		if (!verifyInfoInDb) {
+			logger.warn({ message: `No valid token provided.` });
 			return res.status(401).send();
 		}
 		const tokenCreatedAt = verifyInfoInDb.dataValues.token_created_at;
-		console.log('created at: ', tokenCreatedAt);
+		logger.info({
+			message: {
+				'created at: ': tokenCreatedAt,
+				'now: ': currentTime,
+			},
+		});
 
 		const passVerify = moment(tokenCreatedAt).add(2, 'minutes').isAfter(currentTime);
 		if (passVerify) {
@@ -289,6 +309,7 @@ app.get('/v1/user/verify', async (req, res) => {
 });
 
 app.all('/healthz', (req, res) => {
+	logger.error({ message: `HTTP method not allowed.` });
 	res.status(405).send();
 });
 
