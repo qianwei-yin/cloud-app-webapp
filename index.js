@@ -140,12 +140,11 @@ app.post('/v1/user', async (req, res) => {
 		const newUserInfo = await User.findOne({ where: { username: userInfo.username }, attributes: { exclude: ['password'] } });
 
 		try {
-			const newUserInfoBuffer = Buffer.from(JSON.stringify(newUserInfo));
-
 			if (process.env.PUBSUB_INTERACTION === 'true') {
+				const newUserInfoBuffer = Buffer.from(JSON.stringify(newUserInfo));
 				topic.publishMessage({ data: newUserInfoBuffer });
+				logger.info({ message: `Email verify link published.` });
 			}
-			logger.info({ message: `Email verify link published.` });
 		} catch (error) {
 			logger.error({ message: 'Received error while publishing.', error: error });
 			return res.status(503).send();
