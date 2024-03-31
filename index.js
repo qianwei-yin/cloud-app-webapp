@@ -2,12 +2,19 @@ const express = require('express');
 const bodyParser = require('body-parser');
 require('dotenv').config();
 
+const { PubSub } = require('@google-cloud/pubsub');
+let topic;
+
+if (process.env.PUBSUB_INTERACTION === 'true') {
+	// Instantiates a client
+	const pubSubClient = new PubSub({ projectId: process.env.GCP_PROJECT_ID });
+	topic = pubSubClient.topic(process.env.PUBSUB_TOPIC_NAME);
+}
+
 const { createLogger, format, transports } = require('winston');
 const logger = createLogger({
 	level: 'info',
 	format: format.combine(format.timestamp(), format.simple(), format.json()),
-	// format: format.timestamp(),
-	// defaultMeta: { service: 'webapp' },
 	transports: [new transports.Console(), new transports.File({ filename: '/tmp/webapp.log', level: 'debug' })],
 });
 
@@ -18,6 +25,7 @@ logger.warn('warn distributed logs');
 
 const bcrypt = require('bcrypt');
 const validator = require('validator');
+const moment = require('moment');
 
 const app = express();
 app.use(bodyParser.urlencoded({ extended: true }));
@@ -63,13 +71,54 @@ const User = sequelize.define(
 		updatedAt: 'account_updated',
 	}
 );
+const Verify = sequelize.define(
+	'Verify',
+	{
+		username: {
+			type: DataTypes.STRING,
+			allowNull: false,
+			unique: true,
+		},
+		first_name: {
+			type: DataTypes.STRING,
+			allowNull: false,
+		},
+		last_name: {
+			type: DataTypes.STRING,
+			allowNull: false,
+		},
+		verify_token: {
+			type: DataTypes.UUID,
+			defaultValue: DataTypes.UUIDV4,
+			allowNull: false,
+		},
+		token_created_at: {
+			type: DataTypes.DATE,
+			defaultValue: DataTypes.NOW,
+			allowNull: false,
+		},
+		verified: {
+			type: DataTypes.BOOLEAN,
+			allowNull: false,
+			defaultValue: false,
+		},
+	},
+	{
+		freezeTableName: true,
+		timestamps: true,
+		createdAt: 'object_created',
+		updatedAt: 'object_updated',
+	}
+);
 
 if (!process.argv.includes('--keep')) {
 	(async () => {
+		await Verify.sync({ force: true });
 		await User.sync({ force: true }); // creates the table in database, but drop it first if it already exists
 	})();
 } else if (process.argv.includes('--keep')) {
 	(async () => {
+		await Verify.sync();
 		await User.sync(); // This creates the table if it doesn't exist (and does nothing if it already exists)
 	})();
 }
@@ -90,10 +139,22 @@ app.post('/v1/user', async (req, res) => {
 
 		const newUserInfo = await User.findOne({ where: { username: userInfo.username }, attributes: { exclude: ['password'] } });
 
-		res.status(201).json(newUserInfo);
+		try {
+			const newUserInfoBuffer = Buffer.from(JSON.stringify(newUserInfo));
+
+			if (process.env.PUBSUB_INTERACTION === 'true') {
+				topic.publishMessage({ data: newUserInfoBuffer });
+			}
+			logger.info({ message: `Email verify link published.` });
+		} catch (error) {
+			logger.error({ message: 'Received error while publishing.', error: error });
+			return res.status(503).send();
+		}
+
+		return res.status(201).json(newUserInfo);
 	} catch (error) {
 		logger.error({ error: error });
-		res.status(400).send();
+		return res.status(400).send();
 	}
 });
 
@@ -112,6 +173,11 @@ app.get('/v1/user/self', async (req, res) => {
 		const userInfoInDb = await User.findOne({ where: { username: email } });
 		if (!userInfoInDb || !userInfoInDb?.dataValues?.password) {
 			return res.status(401).send();
+		}
+
+		const userVerifyInfoInDb = await Verify.findOne({ where: { username: email } });
+		if (!userVerifyInfoInDb?.dataValues?.verified) {
+			return res.status(403).send();
 		}
 
 		bcrypt.compare(password, userInfoInDb.dataValues.password, function (err, result) {
@@ -145,6 +211,11 @@ app.put('/v1/user/self', async (req, res) => {
 		const userInfoInDb = await User.findOne({ where: { username: email } });
 		if (!userInfoInDb || !userInfoInDb?.dataValues?.password) {
 			return res.status(401).send();
+		}
+
+		const userVerifyInfoInDb = await Verify.findOne({ where: { username: email } });
+		if (!userVerifyInfoInDb?.dataValues?.verified) {
+			return res.status(403).send();
 		}
 
 		bcrypt.compare(password, userInfoInDb.dataValues.password, async function (err, result) {
@@ -184,6 +255,37 @@ app.get('/healthz', async (req, res) => {
 			logger.error({ message: 'Unable to connect to the database.', error: error });
 			res.status(503).send();
 		}
+	}
+});
+
+app.get('/v1/user/verify', async (req, res) => {
+	try {
+		const currentTime = moment();
+		console.log('now: ', currentTime);
+		const { token } = req.query;
+		if (!token) {
+			return res.status(400).send();
+		}
+
+		const verifyInfoInDb = await Verify.findOne({ where: { verify_token: token } });
+		if (!verifyInfoInDb) {
+			return res.status(401).send();
+		}
+		const tokenCreatedAt = verifyInfoInDb.dataValues.token_created_at;
+		console.log('created at: ', tokenCreatedAt);
+
+		const passVerify = moment(tokenCreatedAt).add(2, 'minutes').isAfter(currentTime);
+		if (passVerify) {
+			await verifyInfoInDb.update({ verified: true });
+			logger.info({ message: 'Email verification successful.' });
+			return res.status(200).json({ message: 'Email verification successful.' });
+		} else {
+			logger.error({ message: 'Email verification link expired.' });
+			return res.status(403).json({ message: 'Email verification link expired.' });
+		}
+	} catch (error) {
+		logger.error({ error: error });
+		res.status(400).send();
 	}
 });
 

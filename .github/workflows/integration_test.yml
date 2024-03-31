@@ -51,6 +51,7 @@ jobs:
           POSTGRES_DATABASE: postgres
           POSTGRES_USERNAME: postgres
           POSTGRES_PASSWORD: postgres
+          PUBSUB_INTERACTION: false
 
   integration-tests-on-pr-merged:
     # Containers must run in Linux based operating systems
@@ -96,3 +97,4 @@ jobs:
           POSTGRES_DATABASE: postgres
           POSTGRES_USERNAME: postgres
           POSTGRES_PASSWORD: postgres
+          PUBSUB_INTERACTION: false
