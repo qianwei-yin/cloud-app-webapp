@@ -3,9 +3,12 @@ name: Run Packer Build
 on:
   pull_request:
     types: [closed]
+  # pull_request:
+  #   types: [opened, synchronize, closed]
 
 env:
   PRODUCT_VERSION: '1.10.1'
+  PACKER_GITHUB_API_TOKEN: ${{ secrets.PACKER_GITHUB_API_TOKEN }}
 
 jobs:
   packer-build:
@@ -37,7 +40,100 @@ jobs:
         id: init
         run: 'packer init ./packer'
 
-      - name: Build Artifact
+      - name: Run `packer build`
         run: cd packer && packer build -var-file=variables.dev.json .
-        # env:
-        #   GOOGLE_APPLICATION_CREDENTIALS: ${{ secrets.GCP_SERVICE_ACCOUNT_KEY }}
+
+      - name: Set Some basic info
+        run: |
+          echo "PROJECT_ID=csye6225-assignments" >> $GITHUB_ENV
+          echo "REGION=us-west1" >> $GITHUB_ENV
+
+      - name: Get latest(just created) CMI ID
+        run: |
+          LATEST_CMI_ID=$(gcloud compute images list --project=$PROJECT_ID --filter="family:csye6225-qy" --sort-by=~creationTimestamp --format="value(NAME)" --limit=1)
+          echo "Latest CMI ID: $LATEST_CMI_ID"
+          echo "LATEST_CMI_ID=$LATEST_CMI_ID" >> $GITHUB_ENV
+
+      - name: Get instance group manager name
+        run: |
+          INSTANCE_GROUP_MANAGER_NAME=$(gcloud compute instance-groups managed list --project=$PROJECT_ID --format="value(NAME)" --limit=1)
+          echo "INSTANCE_GROUP_MANAGER_NAME=$INSTANCE_GROUP_MANAGER_NAME" >> $GITHUB_ENV
+
+      - name: Get old instance template ID
+        run: |
+          LATEST_INS_TPL_ID=$(gcloud compute instance-templates list --project=$PROJECT_ID --sort-by=~creationTimestamp --format="value(NAME)" --limit=1)
+          echo "Latest Instance Template ID: $LATEST_INS_TPL_ID"
+          echo "LATEST_INS_TPL_ID=$LATEST_INS_TPL_ID" >> $GITHUB_ENV
+
+      - name: Generate old instance template JSON
+        run: |
+          gcloud compute instance-templates describe $LATEST_INS_TPL_ID --project=$PROJECT_ID --format=json > tpl.json
+
+      - name: Get metadata startup script
+        run: |
+          echo "$(cat tpl.json | jq -r '.properties.metadata.items[] | select(.key == "startup-script") | .value')" > startup-script.sh
+
+      - name: Get kms key name
+        run: |
+          KMS_KEY_NAME=$(cat tpl.json | jq -r '.properties.disks[0].diskEncryptionKey.kmsKeyName')
+          echo "KMS_KEY_NAME=$KMS_KEY_NAME" >> $GITHUB_ENV
+
+      - name: Get network vars
+        run: |
+          NETWORK_LINK=$(cat tpl.json | jq -r '.properties.networkInterfaces[0].network')
+          echo "NETWORK_LINK=$NETWORK_LINK" >> $GITHUB_ENV
+          SUBNETWORK_LINK=$(cat tpl.json | jq -r '.properties.networkInterfaces[0].subnetwork')
+          echo "SUBNETWORK_LINK=$SUBNETWORK_LINK" >> $GITHUB_ENV
+
+      - name: Get service accounts
+        run: |
+          SA_EMAIL=$(cat tpl.json | jq -r '.properties.serviceAccounts[0].email')
+          echo "SA_EMAIL=$SA_EMAIL"
+          echo "SA_EMAIL=$SA_EMAIL" >> $GITHUB_ENV
+
+      - name: Create new instance template
+        run: |
+          gcloud compute instance-templates create vm-instances-template$(date +%s) \
+          --project=$PROJECT_ID \
+          --machine-type=e2-medium \
+          --image=projects/csye6225-assignments/global/images/$LATEST_CMI_ID \
+          --description="New instance template created by github workflow" \
+          --boot-disk-kms-key=$KMS_KEY_NAME \
+          --region=$REGION \
+          --network=$NETWORK_LINK \
+          --subnet=$SUBNETWORK_LINK \
+          --network-tier=PREMIUM \
+          --stack-type=IPV4_ONLY \
+          --boot-disk-size=100GB \
+          --boot-disk-type=pd-balanced \
+          --tags=load-balanced-backend \
+          --service-account=$SA_EMAIL \
+          --scopes=cloud-platform \
+          --metadata-from-file=startup-script=startup-script.sh
+
+      - name: Get New instance template ID
+        run: |
+          NEW_INS_TPL_ID=$(gcloud compute instance-templates list --project=$PROJECT_ID --sort-by=~creationTimestamp --format="value(NAME)" --limit=1)
+          echo "New Created Instance Template ID: $NEW_INS_TPL_ID"
+          echo "NEW_INS_TPL_ID=$NEW_INS_TPL_ID" >> $GITHUB_ENV
+
+      - name: Configure instance group manager to use new template
+        run: |
+          gcloud compute instance-groups managed set-instance-template $INSTANCE_GROUP_MANAGER_NAME \
+          --project=$PROJECT_ID \
+          --template=$NEW_INS_TPL_ID \
+          --region=$REGION
+
+      - name: Configure instance group manager to rolling update instances
+        run: |
+          gcloud compute instance-groups managed rolling-action start-update $INSTANCE_GROUP_MANAGER_NAME \
+          --version=template=$NEW_INS_TPL_ID \
+          --region=$REGION \
+          --project=$PROJECT_ID
+
+      - name: Group status
+        run: |
+          gcloud compute instance-groups managed wait-until $INSTANCE_GROUP_MANAGER_NAME \
+          --version-target-reached \
+          --region=$REGION \
+          --project=$PROJECT_ID

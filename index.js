@@ -262,7 +262,7 @@ app.get('/healthz', async (req, res) => {
 	} else {
 		try {
 			await sequelize.authenticate();
-			logger.info('Connection has been established successfully.');
+			logger.info('Connection has been established successfully*.');
 			res.status(200).send();
 		} catch (error) {
 			logger.error({ message: 'Unable to connect to the database.', error: error });
@@ -271,7 +271,7 @@ app.get('/healthz', async (req, res) => {
 	}
 });
 
-app.get('/v1/user/verify', async (req, res) => {
+app.get('/user/verify', async (req, res) => {
 	try {
 		const currentTime = moment();
 		const { token } = req.query;
