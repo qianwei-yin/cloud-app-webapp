@@ -32,8 +32,8 @@ describe(`TEST /healthz`, () => {
 	});
 });
 
-describe(`Create a user using /v2/user`, () => {
-	const endpointUrl = '/v2/user';
+describe(`Create a user using /v1/user`, () => {
+	const endpointUrl = '/v1/user';
 
 	it('should return 201 and new created user info when POST ' + endpointUrl, async () => {
 		const reqBody = userBody.ok;
@@ -50,8 +50,8 @@ describe(`Create a user using /v2/user`, () => {
 	});
 });
 
-describe(`Get the new created user info using /v2/user/self`, () => {
-	const endpointUrl = '/v2/user/self';
+describe(`Get the new created user info using /v1/user/self`, () => {
+	const endpointUrl = '/v1/user/self';
 
 	it('should return 403 and user info when GET new created user info using ' + endpointUrl, async () => {
 		const reqBody = userBody.ok;
@@ -68,8 +68,8 @@ describe(`Get the new created user info using /v2/user/self`, () => {
 	});
 });
 
-describe(`Create a user with the same username using /v2/user`, () => {
-	const endpointUrl = '/v2/user';
+describe(`Create a user with the same username using /v1/user`, () => {
+	const endpointUrl = '/v1/user';
 
 	it('should return 400 when POST ' + endpointUrl + ' using the same username as before', async () => {
 		const reqBody = userBody.duplicate;
@@ -79,8 +79,8 @@ describe(`Create a user with the same username using /v2/user`, () => {
 	});
 });
 
-describe(`Update the user using /v2/user/self`, () => {
-	const endpointUrl = '/v2/user/self';
+describe(`Update the user using /v1/user/self`, () => {
+	const endpointUrl = '/v1/user/self';
 
 	it('should return 403 and return updated user info when PUT ' + endpointUrl, async () => {
 		const auth = userBody.ok;
@@ -92,8 +92,8 @@ describe(`Update the user using /v2/user/self`, () => {
 	});
 });
 
-// describe(`Get the updated user info using /v2/user/self`, () => {
-// 	const endpointUrl = '/v2/user/self';
+// describe(`Get the updated user info using /v1/user/self`, () => {
+// 	const endpointUrl = '/v1/user/self';
 
 // 	it('should return 200 and user info when GET updated user info using ' + endpointUrl, async () => {
 // 		const initialBody = userBody.ok;
