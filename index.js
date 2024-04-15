@@ -123,7 +123,7 @@ if (!process.argv.includes('--keep')) {
 	})();
 }
 
-app.post('/v1/user', async (req, res) => {
+app.post('/v2/user', async (req, res) => {
 	const userInfo = req.body;
 
 	if (!validator.isEmail(userInfo.username)) {
@@ -159,7 +159,7 @@ app.post('/v1/user', async (req, res) => {
 	}
 });
 
-app.get('/v1/user/self', async (req, res) => {
+app.get('/v2/user/self', async (req, res) => {
 	const encoded = req.headers.authorization;
 
 	if (!encoded) {
@@ -199,7 +199,7 @@ app.get('/v1/user/self', async (req, res) => {
 	}
 });
 
-app.put('/v1/user/self', async (req, res) => {
+app.put('/v2/user/self', async (req, res) => {
 	const encoded = req.headers.authorization;
 
 	if (!encoded) {
