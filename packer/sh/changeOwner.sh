@@ -2,8 +2,8 @@
 
 set -e
 
-USER="csye6225"
-DIR="/home/csye6225/myapp"
+USER="nologinusername"
+DIR="/home/nologinusername/myapp"
 
 sudo chown -R "${USER}":"${USER}" "${DIR}"
 sudo chmod -R 755 ${DIR}

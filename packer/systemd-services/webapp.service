@@ -1,19 +1,19 @@
 [Unit]
-Description=CSYE 6225 App
-ConditionPathExists=/home/csye6225/myapp/.env
+Description=Cloud App
+ConditionPathExists=/home/nologinusername/myapp/.env
 After=network.target
 
 [Service]
 Type=simple
-User=csye6225
-Group=csye6225
-WorkingDirectory=/home/csye6225/myapp
-ExecStart=/usr/bin/node /home/csye6225/myapp/index.js --keep
+User=nologinusername
+Group=nologinusername
+WorkingDirectory=/home/nologinusername/myapp
+ExecStart=/usr/bin/node /home/nologinusername/myapp/index.js --keep
 Restart=on-failure
 RestartSec=3
 StandardOutput=syslog
 StandardError=syslog
-SyslogIdentifier=csye6225
+SyslogIdentifier=nologinusername
 
 [Install]
 WantedBy=multi-user.target

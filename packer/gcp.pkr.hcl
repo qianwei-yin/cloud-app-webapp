@@ -61,27 +61,22 @@ build {
 
   provisioner "shell" {
     inline = [
-      "sudo mv /tmp/index.js /home/csye6225/myapp",
-      "sudo mv /tmp/package.json /home/csye6225/myapp",
-      "sudo mv /tmp/package-lock.json /home/csye6225/myapp",
+      "sudo mv /tmp/index.js /home/nologinusername/myapp",
+      "sudo mv /tmp/package.json /home/nologinusername/myapp",
+      "sudo mv /tmp/package-lock.json /home/nologinusername/myapp",
       "sudo mv /tmp/config.yaml /etc/google-cloud-ops-agent/config.yaml",
-      "sudo ls -alF /home/csye6225/myapp"
+      "sudo ls -alF /home/nologinusername/myapp"
     ]
   }
 
   provisioner "shell" {
     inline = [
       "sudo touch /tmp/webapp.log",
-      "sudo chown \"csye6225\":\"csye6225\" \"/tmp/webapp.log\"",
+      "sudo chown \"nologinusername\":\"nologinusername\" \"/tmp/webapp.log\"",
       "sudo chmod 755 /tmp/webapp.log",
       "sudo systemctl restart google-cloud-ops-agent"
     ]
   }
-
-  # provisioner "file" {
-  #   content     = "POSTGRES_USERNAME=dbuser\nPOSTGRES_DATABASE=webapp\nPOSTGRES_PASSWORD=123456"
-  #   destination = "/home/csye6225/myapp/.env"
-  # }
 
   provisioner "shell" {
     script = "./sh/installNpmPackages.sh"

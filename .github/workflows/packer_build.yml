@@ -45,12 +45,12 @@ jobs:
 
       - name: Set Some basic info
         run: |
-          echo "PROJECT_ID=csye6225-assignments" >> $GITHUB_ENV
+          echo "PROJECT_ID=<PROJECT_ID>" >> $GITHUB_ENV
           echo "REGION=us-west1" >> $GITHUB_ENV
 
       - name: Get latest(just created) CMI ID
         run: |
-          LATEST_CMI_ID=$(gcloud compute images list --project=$PROJECT_ID --filter="family:csye6225-qy" --sort-by=~creationTimestamp --format="value(NAME)" --limit=1)
+          LATEST_CMI_ID=$(gcloud compute images list --project=$PROJECT_ID --filter="family:cloud-app-qy" --sort-by=~creationTimestamp --format="value(NAME)" --limit=1)
           echo "Latest CMI ID: $LATEST_CMI_ID"
           echo "LATEST_CMI_ID=$LATEST_CMI_ID" >> $GITHUB_ENV
 
@@ -96,7 +96,7 @@ jobs:
           gcloud compute instance-templates create vm-instances-template$(date +%s) \
           --project=$PROJECT_ID \
           --machine-type=e2-medium \
-          --image=projects/csye6225-assignments/global/images/$LATEST_CMI_ID \
+          --image=projects/$PROJECT_ID/global/images/$LATEST_CMI_ID \
           --description="New instance template created by github workflow" \
           --boot-disk-kms-key=$KMS_KEY_NAME \
           --region=$REGION \

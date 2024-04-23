@@ -2,4 +2,4 @@
 
 set -e
 
-sudo bash -c "cd /home/csye6225/myapp && npm install"
+sudo bash -c "cd /home/nologinusername/myapp && npm install"

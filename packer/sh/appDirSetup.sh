@@ -2,8 +2,8 @@
 
 set -e
 
-USER="csye6225"
-DIR="/home/csye6225/myapp"
+USER="nologinusername"
+DIR="/home/nologinusername/myapp"
 
 sudo mkdir -p "${DIR}"
 
