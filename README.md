@@ -1,13 +1,16 @@
-# CSYE6225 Cloud Computing - webapp
+# Cloud Computing App's part - webapp
 
-### Run Application Locally
+### I. Run Application In Cloud
 
-1. `npm install`
-2. `npm start`
+Collaborate with other repositories.
 
-### Run Application In Server
+1. `cd packer`
+2. Create a `variables.auto.pkrvars.hcl` file, the variables you need to set are specified in the `variables.pkr.hcl`.
+3. Run `packer build .` in `./packer`.
 
-##### 1. Setup a droplet
+### II. Run Application In Virtual Machine By Itself
+
+##### 1. Setup a droplet in Digital Ocean
 
 1. Choose CentOS and Version 8
 2. CPU - Regular and 1GB
@@ -18,14 +21,14 @@
 1. set ssh shortcut in local@~/ssh/.config
 
    ```
-   Host docsye
+   Host dovm
     HostName <ip>
     User root
     ForwardX11 yes
-    IdentityFile /Users/conway/.ssh/id_rsa
+    IdentityFile ~/.ssh/id_rsa
    ```
 
-2. `ssh docsye`
+2. `ssh dovm`
 
 3. set alias
 
@@ -41,7 +44,7 @@
 
    ```
    mkdir dev
-   scp </path/to/downloaded/zip> docsye:~/dev
+   scp </path/to/downloaded/zip> dovm:~/dev
 
    yum install unzip
    unzip <zip>
@@ -68,12 +71,21 @@
    sudo systemctl start postgresql
    sudo systemctl enable postgresql
 
-   sudo -u postgres createuser --interactive  # conway
-   sudo -u postgres createdb conway
+   sudo -u postgres createuser --interactive
+   # This will enter the postgres command line tool.
+   # Type your preferred name
+   sudo -u postgres createdb <DB_NAME>
 
-   sudo adduser conway  # need a user of this server to have the same name as the db username
-   sudo -u conway psql
-   conway=# \password  # 123456
+   sudo adduser <DB_USER_NAME>
+   # Add a user for the server.
+   # Because it needs a user of this server to have the same name
+   # as the db username.
+   # So create a user whose name is the same as a user name in DB.
+
+   sudo -u <DB_USER_NAME> psql
+   # This will enter the postgres command line tool.
+   \password
+   # This allows you to type a password
 
    cd /
    find / -name pg_hba.conf
@@ -91,11 +103,11 @@
    sudo dnf update -y  # Not sure if this line is required
    sudo dnf install git -y
    git --version
-   git config --global user.name "Qianwei Yin"
-   git config --global user.email "qianweiyin22@gmail.com"
+   git config --global user.name <YOUR_NAME>
+   git config --global user.email <YOUR_EMAIL>
 
    # ssh
-   ssh-keygen -t ed25519 -C "qianweiyin22@gmail.com"
+   ssh-keygen -t ed25519 -C <YOUR_EMAIL>
    eval "$(ssh-agent -s)"  # print "Agent pid xxxxxx"
    vi /path/to/ssh/config/file
          Host github.com
@@ -120,4 +132,9 @@ Add these to the yaml file
       - name: Print message if it doesn't fail
         run: echo Should not see this message
 ```
-test
+
+### III. Run Application Locally
+
+1. Create a `.env` file. The variables you need to provide are specified in the `.example.env` file.
+2. `npm install`
+3. `npm start`
